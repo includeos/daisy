@@ -1,0 +1,57 @@
+// Variables to modify
+gw.left.net: {{.GwLeftNet}}
+gw.left.netmask: {{.GwLeftNetmask}}
+left.address: {{.LeftAddress}}
+
+gw.right.net: {{.GwRightNet}}
+gw.right.netmask: {{.GwRightNetmask}}
+right.address: {{.RightAddress}}
+
+LEFTPORT: {{.LeftPort}}
+NEXTHOPADDRESS: {{.NextHopAddress}}
+NEXTHOPPORT: {{.NextHopPort}}
+
+Iface mgmt {
+    index: 0,
+    config: dhcp
+}
+Iface left {
+    index: 1,
+    netmask: gw.left.netmask,
+    prerouting: dnat
+}
+Iface right {
+    index: 2,
+    netmask: gw.right.netmask,
+    postrouting: snat
+}
+
+Gateway gw {
+    left: {
+        iface: left
+    },
+    right: {
+        iface: right
+    }
+}
+
+
+Nat::IP dnat {
+    Nat::TCP {
+        if (ip.daddr == left.address) {
+            if (tcp.dport == LEFTPORT) {
+                log("dnat activated, by: ", ip.daddr, ":", tcp.dport, "\n")
+                dnat(NEXTHOPADDRESS, NEXTHOPPORT)
+            }
+        }
+    }
+}
+
+Nat::IP snat {
+    Nat::TCP {
+        if (ip.daddr == NEXTHOPADDRESS and tcp.dport == NEXTHOPPORT) {
+            log("snat activated, sending: ", ip.daddr, ":", tcp.dport, "\n")
+            snat(right.address)
+        }
+    }
+}
