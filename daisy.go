@@ -3,7 +3,7 @@ package main
 import "fmt"
 
 const (
-	instanceCount = 20
+	instanceCount = 3
 	inPort        = 10000
 )
 
@@ -21,6 +21,7 @@ func main() {
 		netmask: "255.255.255.128",
 		right:   "10.100.0.41",
 	}
+	// TODO: Process last destination and port
 
 	// Create intermediate subnets
 	subnets := []subnet{first}
@@ -28,6 +29,7 @@ func main() {
 	subnets = append(subnets, last)
 
 	printLayout(subnets)
+	generateNacls(subnets)
 
 	// Fill in template with subnet info
 
@@ -35,17 +37,25 @@ func main() {
 
 func printLayout(nets []subnet) {
 	fmt.Printf("%-15s %-6s %-4s %-15s\n", "left", "port", "iOS", "right")
-	for i, n := range nets {
-		// don't print number count on first run through
-		if i > 0 {
-			fmt.Printf(" %-6d %-4d ", inPort+i, i)
-		}
+	for i := 0; i < instanceCount; i++ {
+		fmt.Printf("%-15s %-6d %-4d %-15s\n", nets[i].left, inPort+i+1, i+1, nets[i+1].right)
+	}
+}
 
-		if n.right != "" {
-			fmt.Printf("%-15s\n", n.right)
+func generateNacls(nets []subnet) {
+	for i := 0; i < instanceCount; i++ {
+		d := daisyTemplate{
+			GwLeftNet:      nets[i].net,
+			GwLeftNetmask:  nets[i].netmask,
+			LeftAddress:    nets[i].left,
+			GwRightNet:     nets[i+1].net,
+			GwRightNetmask: nets[i+1].netmask,
+			RightAddress:   nets[i+1].right,
+			LeftPort:       inPort + i + 1,
+			NextHopAddress: nets[i+1].left,
+			NextHopPort:    inPort + i + 2,
 		}
-		if n.left != "" {
-			fmt.Printf("%-15s", n.left)
-		}
+		parse(d)
+		fmt.Println("################################################")
 	}
 }

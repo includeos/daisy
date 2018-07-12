@@ -14,12 +14,12 @@ type daisyTemplate struct {
 	GwRightNet     string
 	GwRightNetmask string
 	RightAddress   string
-	LeftPort       string
+	LeftPort       int
 	NextHopAddress string
-	NextHopPort    string
+	NextHopPort    int
 }
 
-func parse(config *daisyTemplate) {
+func parse(config daisyTemplate) {
 	f, err := ioutil.ReadFile("template.nacl")
 	if err != nil {
 		log.Print(err)
