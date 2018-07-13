@@ -1,9 +1,13 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+	"strconv"
+)
 
-const (
-	instanceCount      = 4
+var (
+	instanceCount      = 2
 	inPort             = 10000
 	destinationAddress = "10.100.0.20"
 	destinationPort    = 8080
@@ -20,6 +24,14 @@ type instance struct {
 }
 
 func main() {
+	if len(os.Args) > 1 {
+		i, err := strconv.Atoi(os.Args[1])
+		if err != nil {
+			fmt.Printf("Could not parse number of instances: %v", err)
+			os.Exit(1)
+		}
+		instanceCount = i
+	}
 	// TODO: Read config file
 
 	// TODO: Process first and last file
@@ -60,8 +72,9 @@ func generateNacls(instances []instance) {
 			NextHopAddress: in.nextHopAddress,
 			NextHopPort:    in.nextHopPort,
 		}
-		parse(d)
-		fmt.Println("################################################")
+		if err := parse(d, in.name); err != nil {
+			fmt.Println("Error creating NaCls: ", err)
+		}
 	}
 }
 
@@ -70,7 +83,7 @@ func createInstances(nets []subnet) []instance {
 	for i := 0; i < instanceCount; i++ {
 		in := instance{
 			count:          i + 1,
-			name:           "name",
+			name:           fmt.Sprintf("in-%d", i+1),
 			leftNet:        nets[i],
 			rightNet:       nets[i+1],
 			port:           inPort + i + 1,
