@@ -20,7 +20,7 @@ ids=($($cmd search --instancefilter tag $clean_image_tag -o id))
 num_ids=${#ids[@]}
 
 # Find all the nacls
-nacls=($(find nacls/*))
+nacls=($(find nacls/* | sort -t "-" -k 2 -g))
 num_nacls=${#nacls[@]}
 
 # Check to see if there is a mismatch between number of instances and nacls
@@ -35,9 +35,12 @@ for i in $(seq 0 $(( --num_nacls )) ); do
   # Push the nacl
   naclID=$($cmd push-nacl ${nacls[$i]} -o id)
 
+  # Set the alias
+  $cmd instance-alias ${ids[$i]} $alias_prefix$((i+1))
+
   # Perform the upgrade
   $cmd upgrade --nacl $naclID --imageTag $upgrade_image_tag ${ids[$i]}
-
-  # Set the alias
-  $cmd instance-alias ${ids[$i]} $alias_prefix$i
+  if [ $? -ne 0 ]; then
+    echo "Command: <$cmd upgrade --nacl $naclID --imageTag $upgrade_image_tag ${ids[$i]}> failed"
+  fi
 done
